@@ -1,0 +1,3 @@
+# Tamagotchi
+
+Tamagotchi game
