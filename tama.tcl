@@ -12,10 +12,10 @@ oo::class create Tamagotchi {
     variable happy 1
     
     variable eggScreens
-    variable eggState 0
-    
     variable babyScreens
-    variable babyState 0
+    variable frame 0
+
+    variable screen
 
     my createEggscreens
     my createBabyScreens
@@ -41,65 +41,73 @@ oo::class create Tamagotchi {
     
   }
   
-  method getBaseScreen {} {
-    set screen {}
-  
-    set row {}
-    for {set i 0} {$i < 32} {incr i} {
-      lappend row 0
-    }
-    
-    for {set i 0} {$i < 16} {incr i} {
-      lappend screen $row
-    }
-    
-    return $screen
-  }
-  
   method createBabyScreens {} {
   
     variable babyScreens
-    
-    set screen [my getBaseScreen]
-    
-    lset screen {15 13} 1
-    
-    lappend babyScreens $screen
-    
-    lset screen {15 13} 0
-    lset screen {15 15} 1
-    
-    lappend babyScreens $screen
-    
+
+    set baseTop { {9 12} {9 13} {9 14} {9 15}
+                  {10 11} {10 13} {10 14} {10 16}
+                  {11 11} {11 12} {11 13} {11 14} {11 15} {11 16}
+                  {12 11} {12 12} {12 15} {12 16}
+                  {13 11} {13 12} {13 13} {13 14} {13 15} {13 16}
+                  {14 12} {14 13} {14 14} {14 15} }
+
+    set baseBot { {13 12} {13 13} {13 14} {13 15}
+                  {14 11} {14 13} {14 14} {14 16}
+                  {15 10} {15 11} {15 12} {15 13} {15 14} {15 15} {15 16} {15 17} }
+
+
+    lappend babyScreens $baseTop
+    lappend babyScreens [movePositions 2 $baseTop]
+    lappend babyScreens [movePositions 4 $baseTop]
+    lappend babyScreens [movePositions 6 $baseTop]
+    lappend babyScreens [movePositions 6 $baseBot]
+    lappend babyScreens [movePositions 8 $baseBot]
+    lappend babyScreens [movePositions 6 $baseBot]
+    lappend babyScreens [movePositions 4 $baseTop]
+    lappend babyScreens [movePositions 2 $baseTop]
+    lappend babyScreens $baseTop
+    lappend babyScreens [movePositions -2 $baseTop]
+    lappend babyScreens [movePositions -2 $baseBot]
+    lappend babyScreens [movePositions -4 $baseBot]
+    lappend babyScreens [movePositions -6 $baseBot]
+    lappend babyScreens [movePositions -6 $baseTop]
+    lappend babyScreens [movePositions -4 $baseTop]
+    lappend babyScreens [movePositions -2 $baseTop]
+
   }
   
   method createEggscreens {} {
   
     variable eggScreens
-    
-    set screen [my getBaseScreen]
-    
-    lset screen {6 14} 1
-    lset screen {7 14} 1
-    lset screen {8 14} 1
-    lset screen {9 14} 1
-    lset screen {10 14} 1
-    
-    lappend eggScreens $screen
-    
-    lset screen {6 14} 0
-    lset screen {7 14} 0
-    lset screen {8 14} 0
-    lset screen {9 14} 0
-    lset screen {10 14} 0
-    
-    lset screen {8 12} 1
-    lset screen {8 13} 1
-    lset screen {8 14} 1
-    lset screen {8 15} 1
-    lset screen {8 16} 1
-    
-    lappend eggScreens $screen
+
+    set a { {5 14} {5 15} {5 16} {5 17}
+            {6 13} {6 15} {6 16} {6 17} {6 18}
+            {7 12} {7 15} {7 16} {7 18} {7 19}
+            {8 12} {8 14} {8 15} {8 16} {8 19}
+            {9 11} {9 12} {9 13} {9 14} {9 15} {9 16} {9 17} {9 18} {9 19} {9 20}
+            {10 11} {10 12} {10 13} {10 14} {10 17} {10 18} {10 19} {10 20}
+            {11 11} {11 12} {11 13} {11 14} {11 17} {11 20}
+            {12 11} {12 14} {12 15} {12 16} {12 17} {12 19} {12 20}
+            {13 12} {13 15} {13 16} {13 17} {13 18} {13 19}
+            {14 13} {14 14} {14 15} {14 18}
+            {15 12} {15 13} {15 14} {15 15} {15 16} {15 17} {15 18} {15 19} }
+
+    set b {
+            {5 14} {5 15} {5 16} {5 17}
+            {6 13} {6 16} {6 17} {6 18}
+            {7 12} {7 15} {7 16} {7 18} {7 19}
+            {8 12} {8 13} {8 14} {8 15} {8 16} {8 19}
+            {9 11} {9 12} {9 13} {9 14} {9 15} {9 16} {9 17} {9 19} {9 20}
+            {10 11} {10 12} {10 13} {10 14} {10 17} {10 18} {10 19} {10 20}
+            {11 11} {11 13} {11 14} {11 17} {11 20}
+            {12 11} {12 14} {12 15} {12 16} {12 17} {12 19} {12 20}
+            {13 12} {13 14} {13 15} {13 16} {13 17} {13 18} {13 19}
+            {14 13} {14 14} {14 15} {14 18}
+            {15 12} {15 13} {15 14} {15 15} {15 16} {15 17} {15 18} {15 19} }
+
+    lappend eggScreens $a
+    lappend eggScreens $b
     
   }
   
@@ -107,10 +115,10 @@ oo::class create Tamagotchi {
   
     variable totalTime
     variable age
+    variable screen
+    variable frame
   
     set cPhase [my phase]
-    
-    set scr {}
     
     switch $cPhase {
     
@@ -119,14 +127,13 @@ oo::class create Tamagotchi {
         puts Egg
       
         variable eggScreens
-        variable eggState
+
+        set screen [lindex $eggScreens $frame]
         
-        set scr [lindex $eggScreens $eggState]
-        
-        if {0==$eggState} {
-          set eggState 1
+        if {0==$frame} {
+          set frame 1
         } else {
-          set eggState 0
+          set frame 0
         }
 
       }
@@ -138,13 +145,10 @@ oo::class create Tamagotchi {
         variable babyScreens
         variable babyState
         
-        set scr [lindex $babyScreens $babyState]
-      
-        if {0==$babyState} {
-          set babyState 1
-        } else {
-          set babyState 0
-        }
+        set screen [lindex $babyScreens $frame]
+
+        incr frame
+        if {$frame >= [llength $babyScreens]} { set frame 0 }
         
       }
       
@@ -156,13 +160,13 @@ oo::class create Tamagotchi {
     
     incr totalTime
     
-    if {$totalTime == 5 || $totalTime == 20} {
-      incr age
-    }
-    
-    return $scr
-  
-    
+    if {$totalTime == 10} { incr age }
+
+  }
+
+  method getImage {} {
+    variable screen
+    return $screen
   }
   
 }
@@ -178,7 +182,6 @@ oo::class create Console {
     
   }
 
-  
   method createCanvas {} {
   
     canvas .can
@@ -270,21 +273,25 @@ oo::class create Console {
     variable tamagotchi
     
     if {1==$state} {
-      set tamagotchiImage [$tamagotchi update]
-      my updateScreen $tamagotchiImage
+      $tamagotchi update
+      my updateScreen $tamagotchi
     }
     
   }
   
-  method updateScreen { tamagotchiData } {
+  method updateScreen { tamagotchi } {
+
+    set screen [$tamagotchi getImage]
     
     for {set i 0} {$i < 16} {incr i} {
       for {set j 0} {$j < 32} {incr j} {
-        if {[lindex $tamagotchiData $i $j]==1} {
-          .can itemconfigure "$i-$j" -fill black
+
+        if {"$i $j" in $screen} {
+          .can itemconfigure "$i-$j" -fill black -outline black
         } else {
-          .can itemconfigure "$i-$j" -fill white
+          .can itemconfigure "$i-$j" -fill white -outline white
         }
+
       }
     }
     
@@ -301,6 +308,14 @@ oo::class create Console {
 
 proc every {ms body} {
   eval $body; after $ms [namespace code [info level 0]]
+}
+
+proc movePositions {n lst} {
+  set res {}
+  foreach element $lst {
+    lappend res "[lindex $element 0] [expr {[lindex $element 1]+$n}]"
+  }
+  return $res
 }
 
 proc click {x y} {
