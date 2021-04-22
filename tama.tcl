@@ -10,16 +10,37 @@ oo::class create Tamagotchi {
     variable discipline 0
     variable hungry 1
     variable happy 1
+
+    variable state normal
     
     variable eggScreens
     variable babyScreens
+    variable mealEatingScreens
+    variable snackEatingScreens
+
     variable frame 0
 
     variable screen
 
     my createEggscreens
     my createBabyScreens
+    my createEatingScreens
     
+  }
+
+  method eat {n} {
+
+    variable frame
+    variable state
+
+    set frame 0
+
+    if {$n==0} {
+      set state meal
+    } elseif {$n==1} {
+      set state snack
+    }
+
   }
   
   method weight {} {
@@ -39,6 +60,92 @@ oo::class create Tamagotchi {
       return child
     }
     
+  }
+
+  method createEatingScreens {} {
+
+    variable mealEatingScreens
+    variable snackEatingScreens
+
+    set bread { {9 3} {9 4} {9 5} {9 6} {9 7} {9 8}
+                {10 2} {10 7} {10 9}
+                {11 2} {11 7} {11 9}
+                {12 3} {12 6} {12 8}
+                {13 3} {13 6} {13 8}
+                {14 3} {14 6} {14 8}
+                {15 3} {15 4} {15 5} {15 6} {15 7} {15 8} }
+
+    set snack { {8 4}
+                {9 3} {9 4}
+                {10 2} {10 3} {10 4} {10 5} {10 6} {10 7}
+                {11 4} {11 6} {11 7}
+                {12 4} {12 5} {12 7}
+                {13 4} {13 5} {13 6} {13 7} {13 8} {13 9}
+                {14 7} {14 8}
+                {15 7} }
+
+    set opened { {8 12} {8 13}
+                 {9 12} {9 13} {9 14} {9 15}
+                 {10 13} {10 14} {10 15}
+                 {11 14} {11 15} {11 16}
+                 {12 14} {12 16}
+                 {13 13} {13 14} {13 15} {13 16}
+                 {14 11} {14 12} {14 13} {14 14} {14 15} }
+
+    set baseBot { {13 12} {13 13} {13 14} {13 15}
+                  {14 11} {14 13} {14 14} {14 16}
+                  {15 10} {15 11} {15 12} {15 13} {15 14} {15 15} {15 16} {15 17} }
+
+
+    set bread2 { {9 3}
+                 {10 2} {10 4}
+                 {11 2} {11 5} {11 6} {11 7} {11 8}
+                 {12 3} {12 6} {12 8}
+                 {13 3} {13 6} {13 8}
+                 {14 3} {14 6} {14 8}
+                 {15 3} {15 4} {15 5} {15 6} {15 7} {15 8} }
+
+    set bread3 { {12 3} {12 4}
+                 {13 3} {13 5} {13 6} {13 7} {13 8}
+                 {14 3} {14 6} {14 8}
+                 {15 3} {15 4} {15 5} {15 6} {15 7} {15 8} }
+
+
+
+    set snack2 { {10 4} {10 5} {10 6} {10 7}
+                 {11 4} {11 6} {11 7}
+                 {12 4} {12 5} {12 7}
+                 {13 4} {13 5} {13 6} {13 7} {13 8} {13 9}
+                 {14 7} {14 8}
+                 {15 7} }
+
+    set snack3 { {12 5} {12 7}
+                 {13 4} {13 5} {13 6} {13 7} {13 8} {13 9}
+                 {14 7} {14 8}
+                 {15 7} }
+
+
+    set a [concat [movePositionsVertical -8 $bread] $opened]
+    set b [concat $bread $opened]
+    set c [concat $bread2 $baseBot]
+    set d [concat $bread2 $opened]
+    set e [concat $bread3 $baseBot]
+    set f [concat $bread3 $opened]
+    set g $baseBot
+
+    lappend mealEatingScreens $a $b $c $d $e $f $g
+
+
+    set a [concat [movePositionsVertical -8 $snack] $opened]
+    set b [concat $snack $opened]
+    set c [concat $snack2 $baseBot]
+    set d [concat $snack2 $opened]
+    set e [concat $snack3 $baseBot]
+    set f [concat $snack3 $opened]
+    set g $baseBot
+
+    lappend snackEatingScreens $a $b $c $d $e $f $g
+
   }
   
   method createBabyScreens {} {
@@ -114,6 +221,7 @@ oo::class create Tamagotchi {
     variable age
     variable screen
     variable frame
+    variable state
   
     set cPhase [my phase]
     
@@ -133,12 +241,20 @@ oo::class create Tamagotchi {
       baby {
       
         puts Baby
-        
-        variable babyScreens
-        set screen [lindex $babyScreens $frame]
 
-        if {[incr frame] >= [llength $babyScreens]} { set frame 0 }
-        
+        if {$state=="normal"} {
+          variable babyScreens
+          set screen [lindex $babyScreens $frame]
+          if {[incr frame] >= [llength $babyScreens]} { set frame 0 }
+        } elseif {$state=="meal"} {
+          variable mealEatingScreens
+          set screen [lindex $mealEatingScreens $frame]
+          if {[incr frame] >= [llength $mealEatingScreens]} { set state normal }
+        } elseif {$state=="snack"} {
+          variable snackEatingScreens
+          set screen [lindex $snackEatingScreens $frame]
+          if {[incr frame] >= [llength $snackEatingScreens]} { set state normal }
+        }
       }
       
       child {
@@ -352,6 +468,7 @@ oo::class create Console {
     variable foodMenuScreens
     variable lightMenuScreens
     variable menuOption
+    variable tamagotchi
 
     set opt [lindex $options $currentOption]
 
@@ -385,6 +502,9 @@ oo::class create Console {
         my blackScreen
       }
 
+    } elseif {$state=="foodmenu"} {
+      $tamagotchi eat $menuOption
+      set state "on"
     }
 
     set menuOption 0
@@ -482,7 +602,7 @@ proc click {x y} {
 
 set console [Console new]
 
-every 100 {
+every 500 {
   global console
   $console update
 }
