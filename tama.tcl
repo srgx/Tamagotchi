@@ -10,7 +10,9 @@ oo::class create Tamagotchi {
     variable discipline 0
     variable hungry 1
     variable happy 1
+    variable dirt 0
 
+    # normal, meal, snack, bathroom
     variable state normal
     
     variable eggScreens
@@ -60,6 +62,40 @@ oo::class create Tamagotchi {
       return child
     }
     
+  }
+
+  method createWave {} {
+    set wave { {0 28} {0 29} {0 31}
+               {1 27} {1 28} {1 30}
+               {2 26} {2 27} {2 29}
+               {3 27} {3 28} {3 30}
+
+               {4 28} {4 29} {4 31}
+               {5 27} {5 28} {5 30}
+               {6 26} {6 27} {6 29}
+               {7 27} {7 28} {7 30}
+
+               {8 28} {8 29} {8 31}
+               {9 27} {9 28} {9 30}
+               {10 26} {10 27} {10 29}
+               {11 27} {11 28} {11 30}
+
+               {12 28} {12 29} {12 31}
+               {13 27} {13 28} {13 30}
+               {14 26} {14 27} {14 29}
+               {15 27} {15 28} {15 30}}
+    return $wave
+  }
+
+  method createDirt {} {
+    set dirt { {9 26}
+               {10 21} {10 25}
+               {11 20} {11 23} {11 26}
+               {12 21} {12 23} {12 24}
+               {13 22} {13 23} {13 25}
+               {14 21} {14 22} {14 23} {14 24} {14 26}
+               {15 21} {15 22} {15 23} {15 24} {15 25} {15 26} }
+    return $dirt
   }
 
   method createEatingScreens {} {
@@ -214,6 +250,30 @@ oo::class create Tamagotchi {
         {15 12} {15 13} {15 14} {15 15} {15 16} {15 17} {15 18} {15 19} }
 
   }
+
+  method bathroom {} {
+
+    variable state
+    variable frame
+    variable screen
+    variable dirt
+
+    if {$state=="bathroom"}  { return }
+
+    set dirt 0
+    set frame 0
+    set state bathroom
+
+    set screen [concat $screen [my createWave] ]
+
+  }
+
+  method addDirts {scr} {
+    variable dirt
+    if {$dirt >= 1} { set scr [concat $scr [my createDirt] ] }
+    if {$dirt >= 2} { set scr [concat $scr [movePositionsHorizontal -17 [my createDirt] ] ] }
+    return $scr
+  }
   
   method update {} {
   
@@ -224,12 +284,13 @@ oo::class create Tamagotchi {
     variable state
   
     set cPhase [my phase]
+
+
+    puts [my phase]
     
     switch $cPhase {
     
       egg {
-      
-        puts Egg
       
         variable eggScreens
         set screen [lindex $eggScreens $frame]
@@ -240,11 +301,9 @@ oo::class create Tamagotchi {
       
       baby {
       
-        puts Baby
-
         if {$state=="normal"} {
           variable babyScreens
-          set screen [lindex $babyScreens $frame]
+          set screen [my addDirts [lindex $babyScreens $frame]]
           if {[incr frame] >= [llength $babyScreens]} { set frame 0 }
         } elseif {$state=="meal"} {
           variable mealEatingScreens
@@ -254,17 +313,32 @@ oo::class create Tamagotchi {
           variable snackEatingScreens
           set screen [lindex $snackEatingScreens $frame]
           if {[incr frame] >= [llength $snackEatingScreens]} { set state normal }
+        } elseif {$state=="bathroom"} {
+          puts xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+          set screen [movePositionsHorizontal -2 $screen]
+          incr frame
+          if {$frame > 15} {
+            set state normal
+          }
         }
+
       }
       
       child {
-        puts Child
+        #
       }
       
     }
     
     if {[incr totalTime] == 10} { incr age }
+    if {$totalTime == 80} { my newDirt }
+    if {$totalTime == 100} { my newDirt }
 
+  }
+
+  method newDirt {} {
+    variable dirt
+    incr dirt
   }
 
   method getImage {} {
@@ -280,7 +354,10 @@ oo::class create Console {
   
     variable currentOption 0
     variable options {none feed light game medicine bathroom meter discipline}
+
+    # off, on, dark, foodmenu, lightmenu
     variable state off
+
     variable menuOption 0
 
     variable foodMenuScreens
@@ -353,9 +430,8 @@ oo::class create Console {
   }
 
   method createLightMenuScreens {} {
-    variable lightMenuScreens
 
-    # 15 20
+    variable lightMenuScreens
 
     set txt { {1 10} {1 11} {1 12} {1 17} {1 18} {1 22}
               {2 9} {2 13} {2 17} {2 19} {2 22}
@@ -416,8 +492,6 @@ oo::class create Console {
 
   }
 
-
-  
   # Left button
   method select {} {
 
@@ -486,6 +560,10 @@ oo::class create Console {
         light {
           set state lightmenu
           my updateScreen [lindex $lightMenuScreens 0]
+        }
+
+        bathroom {
+          $tamagotchi bathroom
         }
 
         default {
@@ -602,7 +680,7 @@ proc click {x y} {
 
 set console [Console new]
 
-every 500 {
+every 400 {
   global console
   $console update
 }
