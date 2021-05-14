@@ -3,6 +3,11 @@ proc every {ms body} {
   eval $body; after $ms [namespace code [info level 0]]
 }
 
+proc prepend {v l} {
+  upvar $l lst
+  set lst [concat $v $lst]
+}
+
 proc movePositionsHorizontal {n lst} {
   set res {}
   foreach element $lst {

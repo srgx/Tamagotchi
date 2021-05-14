@@ -6,7 +6,7 @@ source "functions.tcl"
 
 set console [Console new]
 
-every 100 {
+every 300 {
   global console
   $console update
 }

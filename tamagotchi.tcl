@@ -12,13 +12,14 @@ oo::class create Tamagotchi {
     variable dirt 0
     variable sick 0
 
-    # normal, meal, snack, bathroom
+    # normal, meal, snack, bathroom, medicine, meter
     variable state normal
 
     variable eggScreens
     variable babyScreens
     variable mealEatingScreens
     variable snackEatingScreens
+    variable medicineScreens
 
     variable frame 0
 
@@ -27,10 +28,24 @@ oo::class create Tamagotchi {
     variable skullImage [loadImage assets/skull]
     variable waveImage [loadImage assets/wave]
     variable dirtImage [loadImage assets/dirt]
+    variable meterImages
 
     my createEggscreens
     my createBabyScreens
+    my createMedicineScreens
+    my createMeterScreens
 
+  }
+
+  method createMedicineScreens {} {
+    variable medicineScreens
+    set temp [loadImage assets/medicine]
+    lappend medicineScreens $temp
+    set vals {{{8 13} {8 14}} {{8 15} {8 16} {8 17}}  {{8 18} {8 19}}}
+    for {set i 0} {$i < 3} {incr i} {
+      set temp [concat $temp [lindex $vals $i]]
+      prepend "{$temp}" medicineScreens
+    }
   }
 
   method createBabyScreens {} {
@@ -78,12 +93,12 @@ oo::class create Tamagotchi {
     variable mealEatingScreens
     variable snackEatingScreens
 
-    set bread [loadImage assets/bread]
-    set bread2 [loadImage assets/bread2]
-    set bread3 [loadImage assets/bread3]
-    set snack [loadImage assets/snack]
-    set snack2 [loadImage assets/snack2]
-    set snack3 [loadImage assets/snack3]
+    set bread [loadImage assets/bread/bread1]
+    set bread2 [loadImage assets/bread/bread2]
+    set bread3 [loadImage assets/bread/bread3]
+    set snack [loadImage assets/snack/snack1]
+    set snack2 [loadImage assets/snack/snack2]
+    set snack3 [loadImage assets/snack/snack3]
     set opened [loadImage assets/opened]
 
     lappend mealEatingScreens [concat [movePositionsVertical -8 $bread] $opened]\
@@ -133,7 +148,24 @@ oo::class create Tamagotchi {
 
   method createEggscreens {} {
     variable eggScreens
-    lappend eggScreens [loadImage assets/egg1] [loadImage assets/egg2]
+    lappend eggScreens [loadImage assets/egg/egg1] [loadImage assets/egg/egg2]
+  }
+
+  method createMeterScreens {} {
+
+    variable meterImages
+
+    set heart [loadImage assets/heart]
+
+    set hearts {}
+    for {set i 0} {$i < 4} {incr i} {
+      set hearts [concat $hearts [movePositionsHorizontal [expr {-8*$i}] $heart]]
+    }
+
+    lappend meterImages "[loadImage assets/meter/meter1]"\
+                        "[loadImage assets/meter/meter2]"\
+                        "[concat [loadImage assets/meter/meter3] $hearts]"\
+                        "[concat [loadImage assets/meter/meter4] $hearts]"
   }
 
 
@@ -155,6 +187,49 @@ oo::class create Tamagotchi {
 
   }
 
+  method medicine {} {
+
+    variable state
+    variable frame
+    variable sick
+
+    if {$state=="medicine"}  { return }
+
+    set sick 0
+    set frame 0
+    set state medicine
+
+  }
+
+  method meter {} {
+
+    variable frame
+    variable screen
+    variable meterImages
+    variable state
+
+    set state meter
+    set frame 0
+    set screen [lindex $meterImages $frame]
+
+  }
+
+  method normal {} {
+    variable state
+    set state normal
+  }
+
+  method toggleMeter {} {
+
+    variable frame
+    variable meterImages
+    variable screen
+
+    set frame [expr {($frame+1)%4}]
+    set screen [lindex $meterImages $frame]
+
+  }
+
   method addDirts {scr} {
     variable dirt
     variable dirtImage
@@ -172,7 +247,6 @@ oo::class create Tamagotchi {
     variable state
 
     set cPhase [my phase]
-
 
     puts [my phase]
 
@@ -202,12 +276,15 @@ oo::class create Tamagotchi {
           set screen [lindex $snackEatingScreens $frame]
           if {[incr frame] >= [llength $snackEatingScreens]} { set state normal }
         } elseif {$state=="bathroom"} {
-          puts xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
           set screen [movePositionsHorizontal -2 $screen]
           incr frame
           if {$frame > 15} {
             set state normal
           }
+        } elseif {$state=="medicine"} {
+          variable medicineScreens
+          set screen [lindex $medicineScreens $frame]
+          if {[incr frame] >= [llength $medicineScreens]} { set state normal }
         }
 
       }

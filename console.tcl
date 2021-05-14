@@ -109,6 +109,7 @@ oo::class create Console {
     variable state
     variable foodMenuScreens
     variable lightMenuScreens
+    variable tamagotchi
 
     if {$state=="on"||$state=="dark"} {
 
@@ -131,6 +132,8 @@ oo::class create Console {
       puts $menuOption
       my updateScreen [lindex $lightMenuScreens $menuOption]
 
+    } elseif {$state=="meter"} {
+      $tamagotchi toggleMeter
     }
 
   }
@@ -169,8 +172,17 @@ oo::class create Console {
           my updateScreen [lindex $lightMenuScreens 0]
         }
 
+        medicine {
+          $tamagotchi medicine
+        }
+
         bathroom {
           $tamagotchi bathroom
+        }
+
+        meter {
+          set state meter
+          $tamagotchi meter
         }
 
         default {
@@ -198,12 +210,17 @@ oo::class create Console {
 
   # Right button
   method cancel {} {
+
     variable state
+    variable tamagotchi
 
     puts "Cancel"
 
     if {$state=="foodmenu" || $state=="lightmenu"} {
       set state on
+    } elseif {$state=="meter"} {
+      set state on
+      $tamagotchi normal
     }
 
   }
@@ -214,7 +231,7 @@ oo::class create Console {
     variable tamagotchi
 
     if {$state!="off"} { $tamagotchi update }
-    if {$state=="on"} { my updateScreen [$tamagotchi getImage] }
+    if {$state=="on"||$state=="meter"} { my updateScreen [$tamagotchi getImage] }
 
   }
 
