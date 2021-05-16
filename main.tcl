@@ -4,9 +4,11 @@ source "tamagotchi.tcl"
 source "console.tcl"
 source "functions.tcl"
 
+loadResources
+
 set console [Console new]
 
-every 300 {
+every 100 {
   global console
   $console update
 }

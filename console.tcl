@@ -11,18 +11,8 @@ oo::class create Console {
 
     variable menuOption 0
 
-    variable foodMenuScreens
-    variable lightMenuScreens
-
     my createCanvas
-    my createScreens
 
-  }
-
-  method createScreens {} {
-    set arrowImage [loadImage assets/arrow]
-    my createFoodMenuScreens $arrowImage
-    my createLightMenuScreens $arrowImage
   }
 
   method createCanvas {} {
@@ -85,20 +75,6 @@ oo::class create Console {
     puts "Current option: [lindex $options $currentOption]"
   }
 
-  method createLightMenuScreens {arrowImage} {
-    variable lightMenuScreens
-    set txt [loadImage assets/light_text]
-    lappend lightMenuScreens [concat $txt $arrowImage]\
-                             [concat $txt [movePositionsVertical 8 $arrowImage]]
-  }
-
-  method createFoodMenuScreens {arrowImage} {
-    variable foodMenuScreens
-    set txt [loadImage assets/food_text]
-    lappend foodMenuScreens [concat $txt $arrowImage]\
-                            [concat $txt [movePositionsVertical 8 $arrowImage]]
-  }
-
   # Left button
   method select {} {
 
@@ -107,8 +83,8 @@ oo::class create Console {
     variable options
     variable menuOption
     variable state
-    variable foodMenuScreens
-    variable lightMenuScreens
+    global foodMenuScreens
+    global lightMenuScreens
     variable tamagotchi
 
     if {$state=="on"||$state=="dark"} {
@@ -146,11 +122,11 @@ oo::class create Console {
   # Middle button
   method execute {} {
 
+    global foodMenuScreens
+    global lightMenuScreens
     variable currentOption
     variable options
     variable state
-    variable foodMenuScreens
-    variable lightMenuScreens
     variable menuOption
     variable tamagotchi
 

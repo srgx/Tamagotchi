@@ -15,43 +15,9 @@ oo::class create Tamagotchi {
     # normal, meal, snack, bathroom, medicine, meter
     variable state normal
 
-    variable eggScreens
-    variable babyScreens
-    variable mealEatingScreens
-    variable snackEatingScreens
-    variable medicineScreens
-
     variable frame 0
-
     variable screen
 
-    variable skullImage [loadImage assets/skull]
-    variable waveImage [loadImage assets/wave]
-    variable dirtImage [loadImage assets/dirt]
-    variable meterImages
-
-    my createEggscreens
-    my createBabyScreens
-    my createMedicineScreens
-    my createMeterScreens
-
-  }
-
-  method createMedicineScreens {} {
-    variable medicineScreens
-    set temp [loadImage assets/medicine]
-    lappend medicineScreens $temp
-    set vals {{{8 13} {8 14}} {{8 15} {8 16} {8 17}}  {{8 18} {8 19}}}
-    for {set i 0} {$i < 3} {incr i} {
-      set temp [concat $temp [lindex $vals $i]]
-      prepend "{$temp}" medicineScreens
-    }
-  }
-
-  method createBabyScreens {} {
-    set baseBot [loadImage assets/babybot]
-    my createBabyWalkScreens $baseBot
-    my createEatingScreens $baseBot
   }
 
   method eat {n} {
@@ -88,94 +54,12 @@ oo::class create Tamagotchi {
 
   }
 
-  method createEatingScreens {baseBot} {
-
-    variable mealEatingScreens
-    variable snackEatingScreens
-
-    set bread [loadImage assets/bread/bread1]
-    set bread2 [loadImage assets/bread/bread2]
-    set bread3 [loadImage assets/bread/bread3]
-    set snack [loadImage assets/snack/snack1]
-    set snack2 [loadImage assets/snack/snack2]
-    set snack3 [loadImage assets/snack/snack3]
-    set opened [loadImage assets/opened]
-
-    lappend mealEatingScreens [concat [movePositionsVertical -8 $bread] $opened]\
-                              [concat $bread $opened]\
-                              [concat $bread2 $baseBot]\
-                              [concat $bread2 $opened]\
-                              [concat $bread3 $baseBot]\
-                              [concat $bread3 $opened]\
-                              $baseBot
-
-    lappend snackEatingScreens [concat [movePositionsVertical -8 $snack] $opened]\
-                               [concat $snack $opened]\
-                               [concat $snack2 $baseBot]\
-                               [concat $snack2 $opened]\
-                               [concat $snack3 $baseBot]\
-                               [concat $snack3 $opened]\
-                               $baseBot
-
-  }
-
-  method createBabyWalkScreens {baseBot} {
-
-    variable babyScreens
-
-    set baseTop [loadImage assets/babytop]
-
-    lappend babyScreens\
-      $baseTop\
-      [movePositionsHorizontal 2 $baseTop]\
-      [movePositionsHorizontal 4 $baseTop]\
-      [movePositionsHorizontal 6 $baseTop]\
-      [movePositionsHorizontal 6 $baseBot]\
-      [movePositionsHorizontal 8 $baseBot]\
-      [movePositionsHorizontal 6 $baseBot]\
-      [movePositionsHorizontal 4 $baseTop]\
-      [movePositionsHorizontal 2 $baseTop]\
-      $baseTop\
-      [movePositionsHorizontal -2 $baseTop]\
-      [movePositionsHorizontal -2 $baseBot]\
-      [movePositionsHorizontal -4 $baseBot]\
-      [movePositionsHorizontal -6 $baseBot]\
-      [movePositionsHorizontal -6 $baseTop]\
-      [movePositionsHorizontal -4 $baseTop]\
-      [movePositionsHorizontal -2 $baseTop]
-
-  }
-
-  method createEggscreens {} {
-    variable eggScreens
-    lappend eggScreens [loadImage assets/egg/egg1] [loadImage assets/egg/egg2]
-  }
-
-  method createMeterScreens {} {
-
-    variable meterImages
-
-    set heart [loadImage assets/heart]
-
-    set hearts {}
-    for {set i 0} {$i < 4} {incr i} {
-      set hearts [concat $hearts [movePositionsHorizontal [expr {-8*$i}] $heart]]
-    }
-
-    lappend meterImages "[loadImage assets/meter/meter1]"\
-                        "[loadImage assets/meter/meter2]"\
-                        "[concat [loadImage assets/meter/meter3] $hearts]"\
-                        "[concat [loadImage assets/meter/meter4] $hearts]"
-  }
-
-
   method bathroom {} {
-
+    global waveImage
     variable state
     variable frame
     variable screen
     variable dirt
-    variable waveImage
 
     if {$state=="bathroom"}  { return }
 
@@ -201,16 +85,29 @@ oo::class create Tamagotchi {
 
   }
 
+  method getNumber {n shift} {
+    global digits
+    set len [string length $n]
+    set wimage {}
+    for {set i [expr {$len-1}]} {$i >= 0} {incr i -1} {
+      set wimage [concat $wimage [movePositionsVertical $shift [movePositionsHorizontal [expr {-5*($len-$i-1)}] [lindex $digits [string index $n $i]]]]]
+    }
+    return $wimage
+  }
+
   method meter {} {
 
+    global digits
+    global meterImages
     variable frame
     variable screen
-    variable meterImages
     variable state
+    variable age
+    variable weight
 
     set state meter
     set frame 0
-    set screen [lindex $meterImages $frame]
+    set screen [concat [my getNumber $weight 8] [concat [my getNumber $age 0] [lindex $meterImages $frame]]]
 
   }
 
@@ -222,17 +119,26 @@ oo::class create Tamagotchi {
   method toggleMeter {} {
 
     variable frame
-    variable meterImages
+    global meterImages
     variable screen
+    variable weight
+    variable age
 
     set frame [expr {($frame+1)%4}]
     set screen [lindex $meterImages $frame]
 
+    if {0==$frame} {
+      set screen [concat [my getNumber $weight 8]\
+                         [concat [my getNumber $age 0] $screen]]
+    }
+
+    return $screen
+
   }
 
   method addDirts {scr} {
+    global dirtImage
     variable dirt
-    variable dirtImage
     if {$dirt >= 1} { set scr [concat $scr $dirtImage ] }
     if {$dirt >= 2} { set scr [concat $scr [movePositionsHorizontal -17 $dirtImage ] ] }
     return $scr
@@ -254,9 +160,8 @@ oo::class create Tamagotchi {
 
       egg {
 
-        variable eggScreens
+        global eggScreens
         set screen [lindex $eggScreens $frame]
-
         set frame [expr {1==$frame ? 0 : 1}]
 
       }
@@ -264,15 +169,15 @@ oo::class create Tamagotchi {
       baby {
 
         if {$state=="normal"} {
-          variable babyScreens
+          global babyScreens
           set screen [my addSkull [my addDirts [lindex $babyScreens $frame]]]
           if {[incr frame] >= [llength $babyScreens]} { set frame 0 }
         } elseif {$state=="meal"} {
-          variable mealEatingScreens
+          global mealEatingScreens
           set screen [lindex $mealEatingScreens $frame]
           if {[incr frame] >= [llength $mealEatingScreens]} { set state normal }
         } elseif {$state=="snack"} {
-          variable snackEatingScreens
+          global snackEatingScreens
           set screen [lindex $snackEatingScreens $frame]
           if {[incr frame] >= [llength $snackEatingScreens]} { set state normal }
         } elseif {$state=="bathroom"} {
@@ -282,7 +187,7 @@ oo::class create Tamagotchi {
             set state normal
           }
         } elseif {$state=="medicine"} {
-          variable medicineScreens
+          global medicineScreens
           set screen [lindex $medicineScreens $frame]
           if {[incr frame] >= [llength $medicineScreens]} { set state normal }
         }
@@ -303,8 +208,8 @@ oo::class create Tamagotchi {
   }
 
   method addSkull {scr} {
+    global skullImage
     variable sick
-    variable skullImage
     if {$sick} { set scr [concat $scr $skullImage] }
     return $scr
   }
