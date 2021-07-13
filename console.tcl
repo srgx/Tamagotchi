@@ -11,17 +11,27 @@ oo::class create Console {
 
     # Game states
     # off, normal, dark, foodmenu, lightmenu
-    # meal, snack, bathroom, medicine, meter
+    # meal, snack, bathroom, medicine, meter, game
     variable state off
     variable menuOption 0
 
-    # Tamagotchi parameters
+    # Tamagotchi game state
+    # wait, direction, win, lose, score
+    variable gameState {}
+    variable gameRound 1
+    variable playerPoints 0
+    variable tamagotchiPoints 0
+    variable gameDirection
+    variable choice {}
+
     variable totalTime 0
+
+    # Tamagotchi parameters
     variable age -1
     variable weight 5
     variable discipline 0
-    variable hungry 1
-    variable happy 1
+    variable hungry 2
+    variable happy 3
     variable dirt 0
     variable sick 0
 
@@ -92,13 +102,14 @@ oo::class create Console {
   # Left button
   method select {} {
 
-    puts "Selecting"
     global foodMenuScreens
     global lightMenuScreens
+
     variable currentOption
     variable options
     variable menuOption
     variable state
+    variable gameState
 
     # Select main option
     if {$state=="normal"||$state=="dark"} {
@@ -108,8 +119,9 @@ oo::class create Console {
       set currentOption [expr {($currentOption+1)%8}]
       set opt [lindex $options $currentOption]
       if {$opt != "none"} { .can itemconfigure  $opt -fill black }
-      my showCurrentOption
 
+    } elseif {$state=="game"&&$gameState=="wait"} {
+      my chooseLeft
     } else {
 
       # Select in submenu
@@ -117,13 +129,11 @@ oo::class create Console {
 
         foodmenu {
           my toggleMenuOption
-          puts $menuOption
           my updateScreen [lindex $foodMenuScreens $menuOption]
         }
 
         lightmenu {
           my toggleMenuOption
-          puts $menuOption
           my updateScreen [lindex $lightMenuScreens $menuOption]
         }
 
@@ -146,20 +156,34 @@ oo::class create Console {
     set menuOption [expr {$menuOption == 0 ? 1 : 0}]
   }
 
+  method game {} {
+
+    variable frame
+    variable state
+    variable gameState
+    variable gameDirection
+
+    set frame 0
+    set state game
+    set gameState wait
+    set gameDirection left
+
+  }
+
   # Middle button
   method execute {} {
 
     global foodMenuScreens
     global lightMenuScreens
+
     variable currentOption
     variable options
     variable state
     variable menuOption
     variable tamagotchi
+    variable gameState
 
     set opt [lindex $options $currentOption]
-
-    puts "Executing $opt"
 
     if {$state=="normal"||$state=="dark"} {
 
@@ -187,6 +211,10 @@ oo::class create Console {
           my meter
         }
 
+        game {
+          my game
+        }
+
         default {
           #
         }
@@ -203,18 +231,58 @@ oo::class create Console {
 
     } elseif {$state=="foodmenu"} {
       my eat $menuOption
+    } elseif {$state=="game"&&$gameState=="wait"} {
+      my chooseRight
+      return
     }
 
     set menuOption 0
 
   }
 
+  method chooseLeft {} {
+
+    global gameArrowLeft
+
+    variable gameState
+    variable choice
+    variable frame
+
+    set choice left
+    set frame 0
+
+    my updateScreen [concat [my getFace] $gameArrowLeft]
+    set gameState direction
+
+  }
+
+  method chooseRight {} {
+
+    global gameArrowRight
+
+    variable gameState
+    variable choice
+    variable frame
+
+    set choice right
+    set frame 0
+
+    my updateScreen [concat [my getFace] $gameArrowRight]
+    set gameState direction
+
+  }
+
+  method getFace {} {
+    global gameRight
+    global gameLeft
+    variable gameDirection
+    return [expr {$gameDirection=="right" ? $gameRight : $gameLeft}]
+  }
+
   # Right button
   method cancel {} {
 
     variable state
-
-    puts "Cancel"
 
     if {$state=="foodmenu" || $state=="lightmenu" || $state =="meter"} {
       set state normal
@@ -308,19 +376,45 @@ oo::class create Console {
     return $wimage
   }
 
+  method fillHearts { scr n } {
+    global heartInside
+    for {set i 0} {$i < $n} {incr i} {
+      set scr [concat [movePositionsHorizontal [expr {$i*8}] $heartInside] $scr]
+    }
+    return $scr
+  }
+
   method toggleMeter {} {
 
-    variable frame
     global meterImages
+
+    variable frame
     variable weight
     variable age
+    variable hungry
+    variable happy
 
     set frame [expr {($frame+1)%4}]
     set localScreen [lindex $meterImages $frame]
 
-    if {0==$frame} {
-      set localScreen [concat [my getNumberImage $weight 8]\
-                      [concat [my getNumberImage $age 0] $localScreen]]
+    switch $frame {
+
+      0 {
+        set localScreen [concat [my getNumberImage $weight 8]\
+                        [concat [my getNumberImage $age 0] $localScreen]]
+      }
+
+      2 {
+        set localScreen [my fillHearts $localScreen $hungry]
+      }
+
+      3 {
+        set localScreen [my fillHearts $localScreen $happy]
+      }
+
+      default {
+      }
+
     }
 
     my updateScreen $localScreen
@@ -335,13 +429,64 @@ oo::class create Console {
     return $scr
   }
 
+
+  method nextRound {} {
+
+    variable frame
+    variable gameState
+    variable gameRound
+
+    if {[incr frame] >= 20} {
+      set frame 0
+      set gameState [expr {[incr gameRound] > 5 ? "score" : "wait"}]
+      return 1
+    } else {
+      return 0
+    }
+
+  }
+
+  method waitAndCheckWinner {} {
+
+    variable frame
+    variable gameDirection
+    variable choice
+    variable playerPoints
+    variable tamagotchiPoints
+    variable gameState
+
+    if {[incr frame] >= 10} {
+      set frame 0
+      if {$gameDirection==$choice} {
+        incr playerPoints
+        set gameState win
+      } else {
+        incr tamagotchiPoints
+        set gameState lose
+      }
+    }
+
+  }
+
   method update {} {
+
+    global eggScreens
+    global babyScreens
+    global mealEatingScreens
+    global snackEatingScreens
+    global medicineScreens
+    global gameWait
+    global winScreens
+    global loseScreens
 
     variable totalTime
     variable age
     variable frame
     variable state
     variable screen
+    variable playerPoints
+    variable tamagotchiPoints
+    variable gameState
 
     if {$state!="off"} {
 
@@ -350,11 +495,8 @@ oo::class create Console {
       switch [my phase] {
 
         egg {
-
-          global eggScreens
           my updateScreen [lindex $eggScreens $frame]
           set frame [expr {1==$frame ? 0 : 1}]
-
         }
 
         baby {
@@ -362,19 +504,16 @@ oo::class create Console {
           switch $state {
 
             normal {
-              global babyScreens
               my updateScreen [my addSkull [my addDirts [lindex $babyScreens $frame]]]
               if {[incr frame] >= [llength $babyScreens]} { set frame 0 }
             }
 
             meal {
-              global mealEatingScreens
               my updateScreen [lindex $mealEatingScreens $frame]
               if {[incr frame] >= [llength $mealEatingScreens]} { set state normal }
             }
 
             snack {
-              global snackEatingScreens
               my updateScreen [lindex $snackEatingScreens $frame]
               if {[incr frame] >= [llength $snackEatingScreens]} { set state normal }
             }
@@ -386,13 +525,49 @@ oo::class create Console {
             }
 
             medicine {
-              global medicineScreens
               my updateScreen [lindex $medicineScreens $frame]
               if {[incr frame] >= [llength $medicineScreens]} { set state normal }
             }
 
+            game {
+
+              switch $gameState {
+
+                wait {
+                  if {[incr frame] >= [llength $gameWait]} { set frame 0 }
+                  my updateScreen [lindex $gameWait $frame]
+                }
+
+                direction {
+                  my waitAndCheckWinner
+                }
+
+                win {
+                  if {![my nextRound]} {
+                    my updateScreen\
+                      [lindex $winScreens [expr {$frame % [llength $winScreens]}]]
+                  }
+                }
+
+                lose {
+                  if {![my nextRound]} {
+                    my updateScreen\
+                      [lindex $loseScreens [expr {$frame % [llength $loseScreens]}]]
+                  }
+                }
+
+                score {
+                  puts "Player: $playerPoints, Tamagotchi: $tamagotchiPoints"
+                }
+
+                default {
+                }
+
+              }
+
+            }
+
             default {
-              #
             }
 
           }
@@ -400,7 +575,6 @@ oo::class create Console {
         }
 
         child {
-          #
         }
 
       }
@@ -430,7 +604,6 @@ oo::class create Console {
     variable dirt
     incr dirt
   }
-
 
   method medicine {} {
 

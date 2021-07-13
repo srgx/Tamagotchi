@@ -7,11 +7,16 @@ proc loadResources {} {
 
   global foodMenuScreens lightMenuScreens medicineScreens skullImage\
          waveImage dirtImage digits eggScreens babyScreens\
-         mealEatingScreens snackEatingScreens meterImages
+         mealEatingScreens snackEatingScreens meterImages heartInside gameWait\
+         gameLeft gameRight gameArrowLeft gameArrowRight winScreens loseScreens
 
   set skullImage [loadImage assets/skull]
   set waveImage [loadImage assets/wave]
   set dirtImage [loadImage assets/dirt]
+  set heartInside [loadImage assets/heart_inside]
+
+  set winScreens {{{3 3} {3 4}} {{3 5} {3 6}}}
+  set loseScreens {{{13 3} {13 4}} {{13 5} {13 6}}}
 
   set arrowImage [loadImage assets/arrow]
   set txt [loadImage assets/light_text]
@@ -37,6 +42,15 @@ proc loadResources {} {
 
   set baseBot [loadImage assets/babybot]
   set baseTop [loadImage assets/babytop]
+  set baseGame [movePositionsHorizontal 2 $baseTop]
+
+  set gameLeft [loadImage assets/game_left]
+  set gameRight [loadImage assets/game_right]
+
+  set gameArrowLeft [loadImage assets/game_arrow_left]
+  set gameArrowRight [loadImage assets/game_arrow_right]
+
+  set gameWait "{$baseGame} {[movePositionsVertical -1 $baseGame]}"
 
   lappend babyScreens\
     $baseTop\
