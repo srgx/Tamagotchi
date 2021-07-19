@@ -7,7 +7,7 @@ loadResources
 
 set console [Console new]
 
-every 200 {
+every 100 {
   global console
   $console update
 }

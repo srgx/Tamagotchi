@@ -8,15 +8,13 @@ proc loadResources {} {
   global foodMenuScreens lightMenuScreens medicineScreens skullImage\
          waveImage dirtImage digits eggScreens babyScreens\
          mealEatingScreens snackEatingScreens meterImages heartInside gameWait\
-         gameLeft gameRight gameArrowLeft gameArrowRight winScreens loseScreens
+         gameLeft gameRight gameArrowLeft gameArrowRight winScreens loseScreens\
+         gameVs
 
   set skullImage [loadImage assets/skull]
   set waveImage [loadImage assets/wave]
   set dirtImage [loadImage assets/dirt]
   set heartInside [loadImage assets/heart_inside]
-
-  set winScreens {{{3 3} {3 4}} {{3 5} {3 6}}}
-  set loseScreens {{{13 3} {13 4}} {{13 5} {13 6}}}
 
   set arrowImage [loadImage assets/arrow]
   set txt [loadImage assets/light_text]
@@ -50,7 +48,18 @@ proc loadResources {} {
   set gameArrowLeft [loadImage assets/game_arrow_left]
   set gameArrowRight [loadImage assets/game_arrow_right]
 
-  set gameWait "{$baseGame} {[movePositionsVertical -1 $baseGame]}"
+  set sun [loadImage assets/sun]
+
+  set topGame [movePositionsVertical -1 $baseGame]
+  set botGame [movePositionsHorizontal 2 $baseBot]
+  set topGameOpen [lremove $topGame {21 20}]
+  set topGameLose [loadImage assets/top_game_lose]
+  set gameVs [loadImage assets/game_vs]
+
+  set winScreens "{$botGame} {[concat $sun $topGameOpen]}"
+  set loseScreens "{[concat [loadImage assets/small_cloud] $botGame]} {$topGameLose}"
+
+  set gameWait "{$baseGame} {$topGame}"
 
   lappend babyScreens\
     $baseTop\
@@ -112,6 +121,15 @@ proc loadResources {} {
 proc prepend {v l} {
   upvar $l lst
   set lst [concat $v $lst]
+}
+
+# Indices order is important...
+proc lremove {lst indices} {
+  for {set i 0} {$i < [llength $indices]} {incr i} {
+    set index [lindex $indices $i]
+    set lst [lreplace $lst $index $index]
+  }
+  return $lst
 }
 
 proc movePositionsHorizontal {n lst} {

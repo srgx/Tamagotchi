@@ -432,14 +432,34 @@ oo::class create Console {
 
   method nextRound {} {
 
+    global gameVs
+
     variable frame
     variable gameState
     variable gameRound
+    variable playerPoints
+    variable tamagotchiPoints
 
     if {[incr frame] >= 20} {
+
       set frame 0
-      set gameState [expr {[incr gameRound] > 5 ? "score" : "wait"}]
+
+      if {[incr gameRound] > 5} {
+
+        my updateScreen\
+          [concat $gameVs\
+            [movePositionsHorizontal -18 [my getNumberImage $playerPoints 8]]\
+            [movePositionsHorizontal -3 [my getNumberImage $tamagotchiPoints 8]]]
+
+        set playerPoints 0 ; set tamagotchiPoints 0 ; set gameRound 1
+        set gameState score
+
+      } else {
+        set gameState wait
+      }
+
       return 1
+
     } else {
       return 0
     }
@@ -557,7 +577,7 @@ oo::class create Console {
                 }
 
                 score {
-                  puts "Player: $playerPoints, Tamagotchi: $tamagotchiPoints"
+                  if {[incr frame] >= 50} { set state normal }
                 }
 
                 default {
