@@ -2,6 +2,7 @@
 
 source "console.tcl"
 source "functions.tcl"
+source "game.tcl"
 
 loadResources
 

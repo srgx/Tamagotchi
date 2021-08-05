@@ -1,30 +1,26 @@
+#source "game.tcl"
 
 oo::class create Console {
 
   constructor {} {
 
     # Console variables
+    variable totalTime 0
     variable frame 0
     variable screen
-    variable currentOption 0
+    variable optionIndex 0
     variable options {none feed light game medicine bathroom meter discipline}
 
     # Game states
-    # off, normal, dark, foodmenu, lightmenu
+    # off, on, dark, foodmenu, lightmenu
     # meal, snack, bathroom, medicine, meter, game
     variable state off
-    variable menuOption 0
 
-    # Tamagotchi game state
-    # wait, direction, win, lose, score
-    variable gameState {}
-    variable gameRound 1
-    variable playerPoints 0
-    variable tamagotchiPoints 0
-    variable gameDirection
-    variable choice {}
+    # Submenu choice for food and light(0 or 1)
+    variable menuOptionIndex 0
 
-    variable totalTime 0
+    # Object containing game data
+    variable gameObject
 
     # Tamagotchi parameters
     variable age -1
@@ -56,7 +52,8 @@ oo::class create Console {
     set xPos 40
     set yPos 70
 
-    set a $xPos ; set b $yPos ; set c [expr {$squareSize+$a}] ; set d [expr {$squareSize+$yPos}]
+    set a $xPos ; set b $yPos
+    set c [expr {$squareSize+$a}] ; set d [expr {$squareSize+$yPos}]
 
     for {set i 0} {$i < $numRows} {incr i} {
 
@@ -93,34 +90,26 @@ oo::class create Console {
 
   }
 
-  method showCurrentOption {} {
-    variable currentOption
-    variable options
-    puts "Current option: [lindex $options $currentOption]"
-  }
-
   # Left button
   method select {} {
 
     global foodMenuScreens
     global lightMenuScreens
 
-    variable currentOption
+    variable optionIndex
     variable options
-    variable menuOption
     variable state
-    variable gameState
 
     # Select main option
-    if {$state=="normal"||$state=="dark"} {
+    if {$state=="on"||$state=="dark"} {
 
-      set opt [lindex $options $currentOption]
+      set opt [lindex $options $optionIndex]
       if {$opt != "none"} { .can itemconfigure  $opt -fill yellow }
-      set currentOption [expr {($currentOption+1)%8}]
-      set opt [lindex $options $currentOption]
+      set optionIndex [expr {($optionIndex+1)%8}]
+      set opt [lindex $options $optionIndex]
       if {$opt != "none"} { .can itemconfigure  $opt -fill black }
 
-    } elseif {$state=="game"&&$gameState=="wait"} {
+    } elseif {[my isGameWaiting]} {
       my chooseLeft
     } else {
 
@@ -128,13 +117,11 @@ oo::class create Console {
       switch $state {
 
         foodmenu {
-          my toggleMenuOption
-          my updateScreen [lindex $foodMenuScreens $menuOption]
+          my toggleMenu $foodMenuScreens
         }
 
         lightmenu {
-          my toggleMenuOption
-          my updateScreen [lindex $lightMenuScreens $menuOption]
+          my toggleMenu $lightMenuScreens
         }
 
         meter {
@@ -151,22 +138,32 @@ oo::class create Console {
 
   }
 
-  method toggleMenuOption {} {
-    variable menuOption
-    set menuOption [expr {$menuOption == 0 ? 1 : 0}]
+  method isGameWaiting {} {
+    variable gameObject
+    variable state
+    return [expr {$state=="game"&&[$gameObject isWaiting]}]
+  }
+
+  method toggleMenu {screens} {
+    variable menuOptionIndex
+    my togglemenuOptionIndex
+    my updateScreen [lindex $screens $menuOptionIndex]
+  }
+
+  method togglemenuOptionIndex {} {
+    variable menuOptionIndex
+    set menuOptionIndex [expr {$menuOptionIndex == 0 ? 1 : 0}]
   }
 
   method game {} {
 
     variable frame
     variable state
-    variable gameState
-    variable gameDirection
+    variable gameObject
 
     set frame 0
     set state game
-    set gameState wait
-    set gameDirection left
+    set gameObject [Game new]
 
   }
 
@@ -176,26 +173,27 @@ oo::class create Console {
     global foodMenuScreens
     global lightMenuScreens
 
-    variable currentOption
+    variable optionIndex
+    variable menuOptionIndex
     variable options
     variable state
-    variable menuOption
-    variable tamagotchi
-    variable gameState
+    variable gameObject
 
-    set opt [lindex $options $currentOption]
+    if {$state=="on"||$state=="dark"} {
 
-    if {$state=="normal"||$state=="dark"} {
-
-      switch $opt {
+      switch [lindex $options $optionIndex] {
 
         feed {
           set state foodmenu
+          set menuOptionIndex 0
+          puts zerowanie
           my updateScreen [lindex $foodMenuScreens 0]
         }
 
         light {
           set state lightmenu
+          set menuOptionIndex 0
+          puts zerowanie
           my updateScreen [lindex $lightMenuScreens 0]
         }
 
@@ -222,61 +220,43 @@ oo::class create Console {
       }
     } elseif {$state=="lightmenu"} {
 
-      if {$menuOption==0} {
-        set state "normal"
+      if {$menuOptionIndex==0} {
+        set state "on"
       } else {
         set state "dark"
         my blackScreen
       }
 
     } elseif {$state=="foodmenu"} {
-      my eat $menuOption
-    } elseif {$state=="game"&&$gameState=="wait"} {
+      my eat $menuOptionIndex
+    } elseif {[my isGameWaiting]} {
       my chooseRight
       return
     }
 
-    set menuOption 0
-
   }
 
   method chooseLeft {} {
-
-    global gameArrowLeft
-
-    variable gameState
-    variable choice
-    variable frame
-
-    set choice left
-    set frame 0
-
-    my updateScreen [concat [my getFace] $gameArrowLeft]
-    set gameState direction
-
+    my setDirection left
   }
 
   method chooseRight {} {
-
-    global gameArrowRight
-
-    variable gameState
-    variable choice
-    variable frame
-
-    set choice right
-    set frame 0
-
-    my updateScreen [concat [my getFace] $gameArrowRight]
-    set gameState direction
-
+    my setDirection right
   }
 
-  method getFace {} {
-    global gameRight
-    global gameLeft
-    variable gameDirection
-    return [expr {$gameDirection=="right" ? $gameRight : $gameLeft}]
+  method setDirection {dir} {
+
+    global gameArrowLeft
+    global gameArrowRight
+
+    variable gameObject
+    variable frame
+
+    set frame 0
+    $gameObject setDirection $dir
+    my updateScreen [concat [$gameObject getFace]\
+                    [expr {$dir=="right" ? $gameArrowRight : $gameArrowLeft}]]
+
   }
 
   # Right button
@@ -285,7 +265,7 @@ oo::class create Console {
     variable state
 
     if {$state=="foodmenu" || $state=="lightmenu" || $state =="meter"} {
-      set state normal
+      set state on
     }
 
   }
@@ -315,8 +295,8 @@ oo::class create Console {
 
   }
 
-  method paper {} {
-    variable state normal
+  method start {} {
+    variable state on
   }
 
   method eat {n} {
@@ -327,11 +307,6 @@ oo::class create Console {
     set frame 0
     set state [expr {0 == $n ? "meal" : "snack"}]
 
-  }
-
-  method weight {} {
-    variable weight
-    return $weight
   }
 
   method phase {} {
@@ -355,8 +330,6 @@ oo::class create Console {
     variable frame
     variable screen
     variable dirt
-
-    if {$state=="bathroom"}  { return }
 
     set dirt 0
     set frame 0
@@ -435,27 +408,23 @@ oo::class create Console {
     global gameVs
 
     variable frame
-    variable gameState
-    variable gameRound
-    variable playerPoints
-    variable tamagotchiPoints
+    variable gameObject
 
     if {[incr frame] >= 20} {
 
       set frame 0
 
-      if {[incr gameRound] > 5} {
+      if {[$gameObject nextRound] > 5} {
 
         my updateScreen\
           [concat $gameVs\
-            [movePositionsHorizontal -18 [my getNumberImage $playerPoints 8]]\
-            [movePositionsHorizontal -3 [my getNumberImage $tamagotchiPoints 8]]]
+            [movePositionsHorizontal -18 [my getNumberImage [$gameObject getPlayerPoints] 8]]\
+            [movePositionsHorizontal -3 [my getNumberImage [$gameObject getTamagotchiPoints] 8]]]
 
-        set playerPoints 0 ; set tamagotchiPoints 0 ; set gameRound 1
-        set gameState score
+        $gameObject setState score
 
       } else {
-        set gameState wait
+        $gameObject setState wait
       }
 
       return 1
@@ -469,20 +438,16 @@ oo::class create Console {
   method waitAndCheckWinner {} {
 
     variable frame
-    variable gameDirection
-    variable choice
-    variable playerPoints
-    variable tamagotchiPoints
-    variable gameState
+    variable gameObject
 
     if {[incr frame] >= 10} {
       set frame 0
-      if {$gameDirection==$choice} {
-        incr playerPoints
-        set gameState win
+      if {[$gameObject validChoice]} {
+        $gameObject incrPlayer
+        $gameObject setState win
       } else {
-        incr tamagotchiPoints
-        set gameState lose
+        $gameObject incrTamagotchi
+        $gameObject setState lose
       }
     }
 
@@ -504,9 +469,7 @@ oo::class create Console {
     variable frame
     variable state
     variable screen
-    variable playerPoints
-    variable tamagotchiPoints
-    variable gameState
+    variable gameObject
 
     if {$state!="off"} {
 
@@ -523,35 +486,35 @@ oo::class create Console {
 
           switch $state {
 
-            normal {
+            on {
               my updateScreen [my addSkull [my addDirts [lindex $babyScreens $frame]]]
               if {[incr frame] >= [llength $babyScreens]} { set frame 0 }
             }
 
             meal {
               my updateScreen [lindex $mealEatingScreens $frame]
-              if {[incr frame] >= [llength $mealEatingScreens]} { set state normal }
+              if {[incr frame] >= [llength $mealEatingScreens]} { set state on }
             }
 
             snack {
               my updateScreen [lindex $snackEatingScreens $frame]
-              if {[incr frame] >= [llength $snackEatingScreens]} { set state normal }
+              if {[incr frame] >= [llength $snackEatingScreens]} { set state on }
             }
 
             bathroom {
               my updateScreen [movePositionsHorizontal -2 $screen]
               incr frame
-              if {$frame > 15} { set state normal }
+              if {$frame > 15} { set state on }
             }
 
             medicine {
               my updateScreen [lindex $medicineScreens $frame]
-              if {[incr frame] >= [llength $medicineScreens]} { set state normal }
+              if {[incr frame] >= [llength $medicineScreens]} { set state on }
             }
 
             game {
 
-              switch $gameState {
+              switch [$gameObject getState] {
 
                 wait {
                   if {[incr frame] >= [llength $gameWait]} { set frame 0 }
@@ -577,7 +540,7 @@ oo::class create Console {
                 }
 
                 score {
-                  if {[incr frame] >= 50} { set state normal }
+                  if {[incr frame] >= 30} { set gameObject {} ; set state on }
                 }
 
                 default {
@@ -630,8 +593,6 @@ oo::class create Console {
     variable state
     variable frame
     variable sick
-
-    if {$state=="medicine"}  { return }
 
     set sick 0
     set frame 0

@@ -176,7 +176,7 @@ proc click {x y} {
   } elseif {$x > 590 && $x < 640 && $y > 110 && $y < 160} {
     $console cancel
   } else {
-    $console paper
+    $console start
   }
 
 }
