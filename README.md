@@ -1,4 +1,4 @@
-# Tamagotchi
+# ![Logo](https://i.imgur.com/sxgllOI.png)
 
 Tamagotchi game clone
 
