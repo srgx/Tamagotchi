@@ -24,6 +24,6 @@ Tamagotchi game clone
 
 ![Play](https://i.imgur.com/tDJU3rz.png)
 
-* Oops
+* Buttons
 
 ![Tamagotchi](https://i.imgur.com/kFn1fA1.png)
